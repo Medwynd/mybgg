@@ -1,17 +1,17 @@
 {
     "project": {
         "name": "mybgg",
-        "title": ""
+        "title": "Todd's Boardgames"
     },
     "boardgamegeek": {
-        "user_name": "YOUR_BGG_USERNAME",
+        "user_name": "todd degani",
         "extra_params": {
             "own": 1
         }
     },
     "algolia": {
-        "app_id": "YOUR_APP_ID",
-        "api_key_search_only": "YOUR_PUBLIC_API_KEY",
-        "index_name": "YOUR_INDEX_NAME"
+        "app_id": "H48H1K5KW9",
+        "api_key_search_only": "c6cab380ba8b1975abd8b5f4267dd204",
+        "index_name": "mybgg"
     }
 }

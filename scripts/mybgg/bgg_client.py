@@ -56,7 +56,7 @@ class BGGClient:
             raise BGGException("BGG API closed the connection prematurely, please try again...")
 
         logger.debug("REQUEST: " + response.url)
-        logger.debug("RESPONSE: \n" + "\n".join(prettify_if_xml(response.text).splitlines()[:25]))
+        logger.debug("RESPONSE: \n" + prettify_if_xml(response.text))
 
         if response.status_code != 200:
 
@@ -87,41 +87,67 @@ class BGGClient:
         return response.text
 
     def _collection_to_games(self, data):
+        def after_status_hook(_, status):
+            return [tag for tag, value in status.items() if value == "1"]
+
         game_in_collection_processor = xml.dictionary("items", [
             xml.array(
                 xml.dictionary('item', [
                     xml.integer(".", attribute="objectid", alias="id"),
                     xml.string("name"),
-                    xml.string("status", attribute="fortrade"),
-                    xml.string("status", attribute="own"),
-                    xml.string("status", attribute="preordered"),
-                    xml.string("status", attribute="prevowned"),
-                    xml.string("status", attribute="want"),
-                    xml.string("status", attribute="wanttobuy"),
-                    xml.string("status", attribute="wanttoplay"),
-                    xml.string("status", attribute="wishlist"),
+                    xml.dictionary("status", [
+                        xml.string(".", attribute="fortrade"),
+                        xml.string(".", attribute="own"),
+                        xml.string(".", attribute="preordered"),
+                        xml.string(".", attribute="prevowned"),
+                        xml.string(".", attribute="want"),
+                        xml.string(".", attribute="wanttobuy"),
+                        xml.string(".", attribute="wanttoplay"),
+                        xml.string(".", attribute="wishlist"),
+                    ], alias='tags', hooks=xml.Hooks(after_parse=after_status_hook)),
                     xml.integer("numplays"),
                 ], required=False, alias="items"),
             )
         ])
         collection = xml.parse_from_string(game_in_collection_processor, data)
         collection = collection["items"]
-
-        # Collect all status attributes in one field called "tags"
-        attributes = ["fortrade", "preordered", "prevowned", "want", "wanttobuy", "wanttoplay", "wishlist"]
-        for game in collection:
-            tags = []
-            for attribute in attributes:
-                if game[attribute] == "1":
-                    tags.append(attribute)
-
-                del game[attribute]
-
-            game["tags"] = tags
-
         return collection
 
     def _games_list_to_games(self, data):
+        def numplayers_to_result(_, results):
+            result = {result["value"].lower().replace(" ", "_"): int(result["numvotes"]) for result in results}
+
+            if not result:
+                result = {'best': 0, 'recommended': 0, 'not_recommended': 0}
+
+            is_recommended = result['best'] + result['recommended'] > result['not_recommended']
+            if not is_recommended:
+                return "not_recommended"
+
+            is_best = result['best'] > 10 and result['best'] > result['recommended']
+            if is_best:
+                return "best"
+
+            return "recommended"
+
+        def suggested_numplayers(_, numplayers):
+            # Remove not_recommended player counts
+            numplayers = [players for players in numplayers if players["result"] != "not_recommended"]
+
+            # If there's only one player count, that's the best one
+            if len(numplayers) == 1:
+                numplayers[0]["result"] = "best"
+
+            # Just return the numbers
+            return [
+                (players["numplayers"], players["result"])
+                for players in numplayers
+            ]
+
+        def log_item(_, item):
+            logger.debug("Successfully parsed: {} (id: {}).".format(item["name"], item["id"]))
+            return item
+
         game_processor = xml.dictionary("items", [
             xml.array(
                 xml.dictionary("item", [
@@ -129,7 +155,7 @@ class BGGClient:
                     xml.string(".", attribute="type"),
                     xml.string("name[@type='primary']", attribute="value", alias="name"),
                     xml.string("description"),
-                    xml.string("image", required=False, alias="thumbnail"),
+                    xml.string("thumbnail", required=False, alias="image"),
                     xml.array(
                         xml.string(
                             "link[@type='boardgamecategory']",
@@ -164,9 +190,11 @@ class BGGClient:
                                     xml.string(".", attribute="value"),
                                     xml.integer(".", attribute="numvotes"),
                                 ], required=False),
+                                hooks=xml.Hooks(after_parse=numplayers_to_result)
                             )
                         ]),
-                        alias="suggested_numplayers"
+                        alias="suggested_numplayers",
+                        hooks=xml.Hooks(after_parse=suggested_numplayers),
                     ),
                     xml.string(
                         "statistics/ratings/averageweight",
@@ -184,8 +212,11 @@ class BGGClient:
                         alias="rating"
                     ),
                     xml.string("playingtime", attribute="value", alias="playing_time"),
-                ], required=False, alias="items")
-            )
+                ],
+                required=False,
+                alias="items",
+                hooks=xml.Hooks(after_parse=log_item),
+            ))
         ])
         games = xml.parse_from_string(game_processor, data)
         games = games["items"]

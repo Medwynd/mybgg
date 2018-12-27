@@ -4,7 +4,7 @@ from algoliasearch import algoliasearch
 
 
 class Indexer:
-    def __init__(self, app_id, apikey, index_name):
+    def __init__(self, app_id, apikey, index_name, hits_per_page):
         client = algoliasearch.Client(
             app_id=app_id,
             api_key=apikey,
@@ -25,7 +25,8 @@ class Indexer:
             ],
             'customRanking': ['asc(name)'],
             'highlightPreTag': '<strong class="highlight">',
-            'highlightPostTag': '</strong>'
+            'highlightPostTag': '</strong>',
+            'hitsPerPage': hits_per_page,
         })
 
         self.index = index
@@ -71,12 +72,25 @@ class Indexer:
         else:
             return ' '.join(content[:length+1].split(' ')[0:-1]) + suffix
 
+    def _pick_long_paragraph(self, content):
+        content = content.strip()
+        if "\n\n" not in content:
+            return content
+
+        paragraphs = content.split("\n\n")
+        for paragraph in paragraphs[:3]:
+            paragraph = paragraph.strip()
+            if len(paragraph) > 80:
+                return paragraph
+
+        return content
+
     def _prepare_description(self, description):
-        # Take only the first paragraph
-        description = description[:description.index("\n\n")]
+        # Try to find a long paragraph from the beginning of the description
+        description = self._pick_long_paragraph(description)
 
         # Remove unnessesary spacing
-        description = re.sub(r"\s+", " ", description).strip()
+        description = re.sub(r"\s+", " ", description)
 
         # Cut at 700 characters, but not in the middle of a sentence
         description = self._smart_truncate(description)

@@ -4,16 +4,20 @@ import html
 
 
 class BoardGame:
-    def __init__(self, game_data, tags=[], expansions=[]):
+    def __init__(self, game_data, image="", tags=[], expansions=[]):
         self.id = game_data["id"]
         self.name = game_data["name"]
         self.description = html.unescape(game_data["description"])
-        self.image = game_data["image"]
         self.categories = game_data["categories"]
         self.mechanics = game_data["mechanics"]
         self.players = self.calc_num_players(game_data, expansions)
         self.weight = self.calc_weight(game_data)
         self.playing_time = self.calc_playing_time(game_data)
+        self.rank = Decimal(game_data["rank"]) if game_data["rank"] != "Not Ranked" else None
+        self.usersrated = Decimal(game_data["usersrated"])
+        self.numowned = Decimal(game_data["numowned"])
+        self.rating = Decimal(game_data["rating"])
+        self.image = image
         self.tags = tags
         self.expansions = expansions
 

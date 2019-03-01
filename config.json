@@ -1,18 +1,27 @@
 {
     "project": {
-        "name": "mybgg",
-        "title": "Todd's Boardgames"
+        "name": "mybgg", // This is the name of your project. You can leave it as it is.
+        "title": "Todd's Boardgames" // This is the page title. If you leave this empty, a title will be created from your BGG username.
     },
     "boardgamegeek": {
-        "user_name": "todd degani",
+        "user_name": "todd degani", // The username on boardgamegeek that has your games
         "extra_params": {
-            "own": 1
+            "own": 1 // Here's the query that will be sent to BGG to get your games. A full list
+					 // of options can be found here:
+					 // https://lcosmin.github.io/boardgamegeek/modules.html#boardgamegeek.api.BGGClient.collection
         }
     },
     "algolia": {
-        "app_id": "H48H1K5KW9",
-        "api_key_search_only": "c6cab380ba8b1975abd8b5f4267dd204",
-        "index_name": "mybgg",
-		"hits_per_page": 48
+        "app_id": "H48H1K5KW9", // Your Algolia APP ID. When logged in, look at the top of the
+								// page which says: APPS > YOUR_ID_HERE
+        "api_key_search_only": "c6cab380ba8b1975abd8b5f4267dd204", // Click "API Keys" in the menu to the left.
+																   // Use the "Search-Only API Key"!
+        "index_name": "mybgg",  // All your games will be stored in something called an "index".
+								// You can create and index by going to "Indices" in the menu to the left.
+								// Click to create a new index, and give it a name. Put the name you choose here.
+		"hits_per_page": 48, 	// Number of games you want to show on each page
+        "sort_by": "asc(name)"  // Default sort order before the user has searched for anything.
+                                // Can be one of: asc(rank), desc(rating), desc(numrated), desc(numowned)
+                                // "asc" stands for ascending, meaning lowest number first, desc the opposite		
     }
 }

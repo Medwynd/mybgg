@@ -4,6 +4,8 @@ _This project is meant to be forked. The original project is available here: htt
 
 Using this project, you can set up your own site for searching and filtering your boardgame collection. As an example, have a look at this: https://games.emilstenstrom.se
 
+![Site preview](mybgg-preview.png)
+
 ## Requirements
 
 * [GitHub](https://github.com) account (free). We will serve the site using GitHub Pages.
@@ -49,7 +51,7 @@ Using this project, you can set up your own site for searching and filtering you
               "index_name": "YOUR_INDEX_NAME",  // All your games will be stored in something called an "index".
                                                 // You can create and index by going to "Indices" in the menu to the left.
                                                 // Click to create a new index, and give it a name. Put the name you choose here.
-              "hits_per_page": 24,  // Number of games you want to show on each page
+              "hits_per_page": 48,  // Number of games you want to show on each page
               "sort_by": "asc(name)"  // Default sort order before the user has searched for anything.
                                       // Can be one of: asc(rank), desc(rating), desc(numrated), desc(numowned)
                                       // "asc" stands for ascending, meaning lowest number first, desc the opposite

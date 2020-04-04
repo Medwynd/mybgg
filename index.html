@@ -5,17 +5,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=0.7">
   <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
-  <script src="https://cdn.jsdelivr.net/npm/algoliasearch@3.32.1/dist/algoliasearchLite.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@3.4.0/dist/instantsearch.development.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.4/dist/vibrant.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4.1.0/dist/algoliasearch-lite.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4.3.1/dist/instantsearch.production.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/instantsearch.css@7.1.1/themes/reset-min.css">
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,700&amp;display=swap">
 </head>
 <body>
   <header class="search">
     <img class="logo" src="favicon.ico" height="36" width="36">
     <div class="search-box" id="search-box"></div>
+    <label>Sort by:</label>
+    <div class="sort-by" id="sort-by"></div>
     <div class="stats" id="stats"></div>
     <a class="ref" href="https://www.algolia.com"><img src="search-by-algolia.png" width="130" height="18"></a>
   </header>
@@ -26,6 +27,8 @@
       <div class="facet" id="facet-weight" tabindex="0"></div>
       <div class="facet" id="facet-categories" tabindex="0"></div>
       <div class="facet" id="facet-mechanics" tabindex="0"></div>
+      <div class="facet" id="facet-previous-players" tabindex="0"></div>
+      <div class="facet" id="facet-numplays" tabindex="0"></div>
       <div class="clear-all" id="clear-all"></div>
     </aside>
     <main class="results">
@@ -38,7 +41,7 @@
     <details class="game-wrapper">
       <summary>
         <div class="game">
-          <img src="https://yacdn.org/serve/{{{ image }}}" crossorigin="anonymous" alt="{{{ name }}}">
+          <img src="{{{ image }}}" data-maincolor="{{{ color }}}" alt="{{{ name }}}">
         </div>
       </summary>
       <div class="game-details">
@@ -50,7 +53,7 @@
         <dl class="properties">
           <div>
             <dt>Players</dt>
-            <dd>{{{ players }}}</dd>
+            <dd>{{{ players_str }}}</dd>
           </div>
           <div>
             <dt>Playing time</dt>
@@ -62,20 +65,20 @@
           </div>
           <div>
             <dt>Tags</dt>
-            <dd>{{ tags }}</dd>
+            <dd>{{ tags_str }}</dd>
           </div>
           <div>
             <dt>Categories</dt>
             <dd>
-              {{# categories }}{{ categories }}{{/ categories }}
-              {{^ categories}}<em>No categories</em>{{/ categories }}
+              {{# categories_str }}{{ categories_str }}{{/ categories_str }}
+              {{^ categories_str}}<em>No categories</em>{{/ categories_str }}
             </dd>
           </div>
           <div>
             <dt>Mechanics</dt>
             <dd>
-              {{# mechanics }}{{ mechanics }}{{/ mechanics }}
-              {{^ mechanics}}<em>No mechanics</em>{{/ mechanics }}
+              {{# mechanics_str }}{{ mechanics_str }}{{/ mechanics_str }}
+              {{^ mechanics_str}}<em>No mechanics</em>{{/ mechanics_str }}
             </dd>
           </div>
           {{# has_expansions }}

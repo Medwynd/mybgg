@@ -30,7 +30,6 @@ def main(args):
             apikey=args.apikey,
             index_name=SETTINGS["algolia"]["index_name"],
             hits_per_page=hits_per_page,
-            sort_by=SETTINGS["algolia"].get("sort_by", "asc(name)"),
         )
         indexer.add_objects(collection)
         indexer.delete_objects_not_in(collection)
@@ -70,7 +69,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--debug',
         action='store_true',
-        help="Print debug information, such as requests made and responsed recieved."
+        help="Print debug information, such as requests made and responses received."
     )
 
     args = parser.parse_args()

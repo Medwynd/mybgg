@@ -27,6 +27,24 @@ class BGGClient:
         collection = self._collection_to_games(data)
         return collection
 
+    def plays(self, user_name):
+        params = {
+            "username": user_name,
+            "page": 1,
+        }
+        all_plays = []
+
+        data = self._make_request("/plays?version=1", params)
+        new_plays = self._plays_to_games(data)
+
+        while (len(new_plays) > 0):
+            all_plays = all_plays + new_plays
+            params["page"] += 1
+            data = self._make_request("/plays?version=1", params)
+            new_plays = self._plays_to_games(data)
+
+        return all_plays
+
     def game_list(self, game_ids):
         if not game_ids:
             return []
@@ -85,6 +103,32 @@ class BGGClient:
             )
 
         return response.text
+
+    def _plays_to_games(self, data):
+        def after_players_hook(_, status):
+            return status["name"] if "name" in status else "Unknown"
+
+        plays_processor = xml.dictionary("plays", [
+            xml.array(
+                xml.dictionary('play', [
+                    xml.integer(".", attribute="id", alias="playid"),
+                    xml.dictionary('item', [
+                        xml.string(".", attribute="name", alias="gamename"),
+                        xml.integer(".", attribute="objectid", alias="gameid")
+                    ], alias='game'),
+                    xml.array(
+                        xml.dictionary('players/player', [
+                            xml.string(".", attribute="name", required=False, default="Unknown")
+                        ], required=False, alias='players', hooks=xml.Hooks(after_parse=after_players_hook))
+                    )
+
+                ], required=False, alias="plays")
+            )
+        ])
+
+        plays = xml.parse_from_string(plays_processor, data)
+        plays = plays["plays"]
+        return plays
 
     def _collection_to_games(self, data):
         def after_status_hook(_, status):
@@ -207,6 +251,7 @@ class BGGClient:
                         xml.string(
                             "statistics/ratings/ranks/rank[@friendlyname='Board Game Rank']",
                             attribute="value",
+                            required=False,
                             alias="rank"
                         ),
                         xml.string(

@@ -1,10 +1,9 @@
-import math
 from decimal import Decimal
 import html
 
 
 class BoardGame:
-    def __init__(self, game_data, image="", tags=[], expansions=[]):
+    def __init__(self, game_data, image="", tags=[], numplays=0, previous_players=[], expansions=[]):
         self.id = game_data["id"]
         self.name = game_data["name"]
         self.description = html.unescape(game_data["description"])
@@ -13,12 +12,14 @@ class BoardGame:
         self.players = self.calc_num_players(game_data, expansions)
         self.weight = self.calc_weight(game_data)
         self.playing_time = self.calc_playing_time(game_data)
-        self.rank = Decimal(game_data["rank"]) if game_data["rank"] != "Not Ranked" else None
-        self.usersrated = Decimal(game_data["usersrated"])
-        self.numowned = Decimal(game_data["numowned"])
-        self.rating = Decimal(game_data["rating"])
+        self.rank = self.calc_rank(game_data)
+        self.usersrated = self.calc_usersrated(game_data)
+        self.numowned = self.calc_numowned(game_data)
+        self.rating = self.calc_rating(game_data)
+        self.numplays = numplays
         self.image = image
         self.tags = tags
+        self.previous_players = previous_players
         self.expansions = expansions
 
     def calc_num_players(self, game_data, expansions):
@@ -47,6 +48,30 @@ class BoardGame:
 
         return '> 4h'
 
+    def calc_rank(self, game_data):
+        if not game_data["rank"] or game_data["rank"] == "Not Ranked":
+            return None
+
+        return Decimal(game_data["rank"])
+
+    def calc_usersrated(self, game_data):
+        if not game_data["usersrated"]:
+            return 0
+
+        return Decimal(game_data["usersrated"])
+
+    def calc_numowned(self, game_data):
+        if not game_data["numowned"]:
+            return 0
+
+        return Decimal(game_data["numowned"])
+
+    def calc_rating(self, game_data):
+        if not game_data["rating"]:
+            return None
+
+        return Decimal(game_data["rating"])
+
     def calc_weight(self, game_data):
         weight_mapping = {
             0: "Light",
@@ -56,4 +81,4 @@ class BoardGame:
             4: "Medium Heavy",
             5: "Heavy",
         }
-        return weight_mapping[math.ceil(Decimal(game_data["weight"]))]
+        return weight_mapping[round(Decimal(game_data["weight"] or 0))]

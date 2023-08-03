@@ -180,6 +180,22 @@ function get_widgets(SETTINGS) {
         sortBy: function(a, b){ return PLAYING_TIME_ORDER.indexOf(a.name) - PLAYING_TIME_ORDER.indexOf(b.name); },
       }
     ),
+    "refine_min_age": panel('Min age')(instantsearch.widgets.numericMenu)(
+      {
+        container: '#facet-min-age',
+        attribute: 'min_age',
+        items: [
+          { label: 'Any age' },
+          { label: '< 5 years', end: 4 },
+          { label: '< 7 years', end: 6 },
+          { label: '< 9 years', end: 8 },
+          { label: '< 11 years', end: 10 },
+          { label: '< 13 years', end: 12 },
+          { label: '< 15 years', end: 14 },
+          { label: '15+', start: 15 },
+        ]
+      }
+    ),
     "refine_previousplayers": panel('Previous players')(instantsearch.widgets.refinementList)(
       {
         container: '#facet-previous-players',
@@ -234,6 +250,26 @@ function get_widgets(SETTINGS) {
           game.tags_str = game.tags.join(", ");
           game.description = game.description.trim();
           game.has_expansions = (game.expansions.length > 0);
+          game.has_more_expansions = (game.has_more_expansions);
+
+          if (game.has_more_expansions) {
+            game_prefix = game.name.indexOf(":")? game.name.substring(0, game.name.indexOf(":")) : game.name;
+            expansions_url_data = {
+              searchstr: game_prefix,
+              searchfield: "title",
+              objecttype: "thing",
+              subtype: "boardgameexpansion",
+            };
+            has_more_expansions_url = (
+              "https://boardgamegeek.com/collection/user/" +
+              encodeURIComponent(SETTINGS.boardgamegeek.user_name) +
+              "?" +
+              (Object.keys(expansions_url_data).map(function(key){
+                return key + "=" + expansions_url_data[key];
+              })).join("&")  // Don't encode game_prefix, because bgg redirects indefinately then...
+            );
+            game.has_more_expansions_url = has_more_expansions_url;
+          }
 
           return game;
         });
@@ -317,6 +353,7 @@ function init(SETTINGS) {
     widgets["refine_players"],
     widgets["refine_weight"],
     widgets["refine_playingtime"],
+    widgets["refine_min_age"],
     widgets["hits"],
     widgets["stats"],
     widgets["pagination"],

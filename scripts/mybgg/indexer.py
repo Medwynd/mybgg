@@ -5,9 +5,9 @@ import time
 import colorgram
 import requests
 from algoliasearch.search_client import SearchClient
-# Allow colorgram to read truncated files
 from PIL import Image, ImageFile
 
+# Allow colorgram to read truncated files
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class Indexer:
@@ -30,6 +30,7 @@ class Indexer:
                 'players',
                 'weight',
                 'playing_time',
+                'min_age',
                 'searchable(previous_players)',
                 'numplays',
             ],
@@ -209,7 +210,6 @@ class Indexer:
             attribute_map = {
                 "id": lambda x: x,
                 "name": lambda x: self._remove_game_name_prefix(x, game["name"]),
-                "players": lambda x: x or None,
             }
             game["expansions"] = [
                 {
@@ -219,6 +219,9 @@ class Indexer:
                 }
                 for expansion in game["expansions"]
             ]
+            # Limit the number of expansions to 10 to keep the size down
+            game["has_more_expansions"] = len(game["expansions"]) > 10
+            game["expansions"] = game["expansions"][:10]
 
             # Make sure description is not too long
             game["description"] = self._prepare_description(game["description"])

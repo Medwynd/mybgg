@@ -1,4 +1,5 @@
 import logging
+import random
 import time
 from xml.etree.ElementTree import fromstring
 
@@ -55,7 +56,7 @@ class BGGClient:
                 yield iterable[i:i + n]
 
         games = []
-        for game_ids_subset in chunks(game_ids, 100):
+        for game_ids_subset in chunks(game_ids, 20):
             url = "/thing/?stats=1&id=" + ",".join([str(id_) for id_ in game_ids_subset])
             data = self._make_request(url)
             games += self._games_list_to_games(data)
@@ -63,43 +64,57 @@ class BGGClient:
         return games
 
     def _make_request(self, url, params={}, tries=0):
+        """
+        Makes a request to the specified URL with the given parameters.
+
+        Args:
+            url (str): The URL to make the request to.
+            params (dict, optional): The parameters to include in the request. Defaults to an empty dictionary.
+            tries (int, optional): The number of times the request has been retried. Defaults to 0.
+
+        Returns:
+            str: The response text.
+
+        Raises:
+            BGGException: If the request encounters errors or the BGG API closes the connection prematurely.
+
+        Notes:
+            - This method uses exponential backoff and jitter for retrying failed requests.
+            - If the request encounters HTTP errors (4xx or 5xx status codes), a `BGGException` is raised.
+            - If the request encounters connection errors or chunked encoding errors, the method will retry the request up to 10 times.
+            - If the request encounters a "Too Many Requests" error, the method will retry the request up to 3 times with a 30-second delay between retries.
+            - If the response contains XML errors, a `BGGException` is raised with the specific error messages.
+            - This method is recursive, meaning it calls itself if a retry is needed.
+        """
+
+        def sleep_with_backoff_and_jitter(base_time, tries=1, jitter_factor=0.5):
+            """Sleep with exponential backoff and jitter."""
+            sleep_time = base_time * 2 ** tries * random.uniform(1 - jitter_factor, 1 + jitter_factor)
+            time.sleep(sleep_time)
 
         try:
             response = self.requester.get(BGGClient.BASE_URL + url, params=params)
-        except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError):
-            if tries < 3:
-                time.sleep(2)
+            response.raise_for_status()  # This will raise an exception for 4xx and 5xx status codes
+        except (
+            requests.exceptions.HTTPError,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.ChunkedEncodingError
+        ):
+            if tries < 10:
+                sleep_with_backoff_and_jitter(1, tries)
                 return self._make_request(url, params=params, tries=tries + 1)
-
-            raise BGGException("BGG API closed the connection prematurely, please try again...")
+            else:
+                raise BGGException("BGG API closed the connection prematurely, please try again...")
+        except requests.exceptions.TooManyRequests:
+            if tries < 3:
+                logger.debug("BGG returned \"Too Many Requests\", waiting 30 seconds before trying again...")
+                sleep_with_backoff_and_jitter(30, tries)
+                return self._make_request(url, params=params, tries=tries + 1)
+            else:
+                raise BGGException(f"BGG returned status code {response.status_code} when requesting {response.url}")
 
         logger.debug("REQUEST: " + response.url)
         logger.debug("RESPONSE: \n" + prettify_if_xml(response.text))
-
-        if response.status_code != 200:
-
-            # Handle 202 Accepted
-            if response.status_code == 202:
-                if tries < 10:
-                    time.sleep(5)
-                    return self._make_request(url, params=params, tries=tries + 1)
-
-            # Handle 504 Gateway Timeout
-            if response.status_code == 540:
-                if tries < 3:
-                    time.sleep(2)
-                    return self._make_request(url, params=params, tries=tries + 1)
-
-            # Handle 429 Too Many Requests
-            if response.status_code == 429:
-                if tries < 3:
-                    logger.debug("BGG returned \"Too Many Requests\", waiting 30 seconds before trying again...")
-                    time.sleep(30)
-                    return self._make_request(url, params=params, tries=tries + 1)
-
-            raise BGGException(
-                f"BGG returned status code {response.status_code} when requesting {response.url}"
-            )
 
         tree = fromstring(response.text)
         if tree.tag == "errors":
